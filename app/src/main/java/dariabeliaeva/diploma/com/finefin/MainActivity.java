@@ -1,35 +1,25 @@
 package dariabeliaeva.diploma.com.finefin;
 
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import co.moonmonkeylabs.realmrecyclerview.RealmRecyclerView;
-//import co.moonmonkeylabs.realmrecyclerview.example.models.TodoItem;
-import io.realm.Realm;
-import io.realm.RealmBasedRecyclerViewAdapter;
-import io.realm.RealmConfiguration;
-import io.realm.RealmResults;
-import io.realm.RealmViewHolder;
-import io.realm.Sort;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -37,19 +27,11 @@ import dariabeliaeva.diploma.com.finefin.data_models.Spendings;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
+//import co.moonmonkeylabs.realmrecyclerview.example.models.TodoItem;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static final int[] COLORS = new int[] {
-            Color.argb(255, 28, 160, 170),
-            Color.argb(255, 99, 161, 247),
-            Color.argb(255, 13, 79, 139),
-            Color.argb(255, 89, 113, 173),
-            Color.argb(255, 200, 213, 219),
-            Color.argb(255, 99, 214, 74),
-            Color.argb(255, 205, 92, 92),
-            Color.argb(255, 105, 5, 98)
-    };
-
+    FinListAdapter finListAdapter;
     private Realm realm;
     Date dPicker = new Date();
 
@@ -112,59 +94,46 @@ public class MainActivity extends AppCompatActivity {
             System.out.println("LOOP");
         }
         */
+        provideListInitialization();
+
+
+    }
+
+    private void provideListInitialization() {
         RealmResults<Spendings> spenItems = realm
                 .where(Spendings.class)
                 .findAll();
-        SpenRealmAdapter toDoRealmAdapter = new SpenRealmAdapter(this, spenItems, true, true);
-        RealmRecyclerView realmRecyclerView = (RealmRecyclerView) findViewById(R.id.realm_recycler_view);
-        realmRecyclerView.setItemViewCacheSize(10);
-        realmRecyclerView.setAdapter(toDoRealmAdapter);
-    }
+        ArrayList<Spendings> spenItemsArrayList = new ArrayList<>();
+        spenItemsArrayList.addAll(spenItems);
 
-    public class SpenRealmAdapter
-            extends RealmBasedRecyclerViewAdapter<Spendings, SpenRealmAdapter.ViewHolder> {
+        finListAdapter = new FinListAdapter();
+        finListAdapter.setSpendings(spenItemsArrayList);
+        RecyclerView realmRecyclerView = (RecyclerView) findViewById(R.id.fin_list);
+        realmRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, true));
+        realmRecyclerView.setAdapter(finListAdapter);
+        realmRecyclerView.setNestedScrollingEnabled(false);
 
-        public class ViewHolder extends RealmViewHolder {
-
-            public TextView spenTextView;
-            public ViewHolder(FrameLayout container) {
-                super(container);
-                this.spenTextView = (TextView) container.findViewById(R.id.todo_text_view);
+        ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+                return false;
             }
-        }
 
-        public SpenRealmAdapter(
-                Context context,
-                RealmResults<Spendings> realmResults,
-                boolean automaticUpdate,
-                boolean animateResults) {
-            super(context, realmResults, automaticUpdate, animateResults);
-        }
+            @Override
+            public void onSwiped(RecyclerView.ViewHolder viewHolder, int swipeDir) {
+                realm.beginTransaction();
+                finListAdapter.getSpendings().get(viewHolder.getAdapterPosition()).removeFromRealm();
+                realm.commitTransaction();
+                finListAdapter.removeSpending(viewHolder.getAdapterPosition());
 
 
+            }
+        };
 
-        @Override
-        public ViewHolder onCreateRealmViewHolder(ViewGroup viewGroup, int viewType) {
-            View v = inflater.inflate(R.layout.todo_text_view, viewGroup, false);
-            return new ViewHolder((FrameLayout) v);
-        }
-
-        @Override
-        public void onBindRealmViewHolder(ViewHolder viewHolder, int position) {
-            final Spendings spenItem = realmResults.get(position);
-            viewHolder.spenTextView.setText(spenItem.getName() + "/t" + spenItem.getPrice());
-            viewHolder.itemView.setBackgroundColor(
-                    COLORS[(int) (spenItem.getId() % COLORS.length)]
-            );
-        }
-
-
-
-        @Override
-        public int getItemCount() {
-            return realmResults.size();
-        }
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(simpleItemTouchCallback);
+        itemTouchHelper.attachToRecyclerView(realmRecyclerView);
     }
+
 
     private void buildAndShowInputDialog() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -224,6 +193,8 @@ public class MainActivity extends AppCompatActivity {
         spenItem.setDate(dPicker);
 
         realm.commitTransaction();
+
+        finListAdapter.addSpending(spenItem);
     }
 }
 

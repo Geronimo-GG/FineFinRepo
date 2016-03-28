@@ -72,19 +72,13 @@
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:app="http://schemas.android.com/apk/res-auto"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            android:layout_height="match_parent">
 
-            <co.moonmonkeylabs.realmrecyclerview.RealmRecyclerView
-                android:id="@+id/realm_recycler_view"
-                android:background="#ff0000"
+            <android.support.v7.widget.RecyclerView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                app:rrvLayoutType="LinearLayout"
-                app:rrvSwipeToDelete="true"
+                android:layout_height="wrap_content"
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                app:rrvEmptyLayoutId="@layout/to_do_empty_view"
-                />
+                android:id="@+id/fin_list"/>
         </FrameLayout>
 
     </android.support.v4.widget.NestedScrollView>
